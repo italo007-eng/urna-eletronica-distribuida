@@ -1,0 +1,6 @@
+# um ID de eleitor por linha
+1001
+1002
+1003
+1004
+1005

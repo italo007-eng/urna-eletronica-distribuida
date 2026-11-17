@@ -1,0 +1,5 @@
+# formato: numero;nome
+1;Ana Souza
+2;Bruno Lima
+3;Carla Mendes
+0;Voto em Branco
