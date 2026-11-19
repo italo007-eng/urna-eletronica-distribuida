@@ -3,7 +3,7 @@
 Projeto da disciplina **Redes de Computadores I** (Análise e Desenvolvimento de Sistemas, IFBA Campus Irecê).
 Tema 1: **Urna Eletrônica Distribuída**, com arquitetura cliente-servidor sobre **sockets TCP**.
 
-- **Autor(es):** Italo (preencher com o nome completo e os demais integrantes do grupo)
+- **Autor(es):** Italo - laura - joão rocha - karolaine
 - **Linguagem:** Java 21 (apenas biblioteca padrão, sem dependências externas)
 - **Ambiente:** duas máquinas virtuais Linux Debian 13 (VirtualBox) na mesma rede local
 
@@ -122,11 +122,11 @@ ip a
 ping -c 4 IP_DO_SERVIDOR
 ```
 
-Neste projeto os testes usaram, como exemplo, servidor `192.168.1.5` e cliente `192.168.1.6`.
+Neste projeto os testes usaram, como exemplo, servidor `192.168.1.5` e cliente `192.168.1.6`. O ping bem-sucedido termina assim:
 
-![Endereços IP das duas VMs](docs/img/01-ip-das-vms.png)
-
-![Ping entre as VMs](docs/img/02-ping-entre-vms.png)
+```
+4 packets transmitted, 4 received, 0% packet loss
+```
 
 ---
 
@@ -157,8 +157,6 @@ javac -d out src/servidor/*.java src/cliente/*.java
 
 Se não imprimir nada, a compilação foi bem-sucedida. As duas VMs devem estar na **mesma versão** do código.
 
-![Compilação](docs/img/03-compilacao.png)
-
 ### 3.3 Executar o servidor (VM `servidor-urna`)
 
 Para começar uma eleição do zero, apague o estado anterior:
@@ -188,8 +186,6 @@ Comandos administrativos (digitados no prompt `admin>`):
 | `apuracao` | Mostra a contagem parcial ou final dos votos |
 | `ajuda` | Lista os comandos |
 | `sair` | Encerra o servidor |
-
-![Servidor em execução](docs/img/04-servidor-iniciado.png)
 
 ### 3.4 Executar o cliente (VM `cliente-urna`)
 
@@ -222,8 +218,6 @@ Guarde este código como comprovante.
 Pressione Enter para liberar o terminal...
 ```
 
-![Cliente votando](docs/img/05-cliente-votando.png)
-
 ### 3.5 Configuração dos dados
 
 Para alterar candidatos e eleitores, edite os arquivos em `dados/` e reinicie o servidor.
@@ -244,15 +238,22 @@ Para alterar candidatos e eleitores, edite os arquivos em `dados/` e reinicie o 
 
 ## 4. Testes realizados
 
-| # | Cenário | Resultado esperado | Evidência |
+| # | Cenário | Como reproduzir | Resultado esperado |
 |---|---|---|---|
-| 1 | Eleitor apto vota | Recibo exibido e voto contado | ![](docs/img/05-cliente-votando.png) |
-| 2 | Mesmo eleitor tenta votar de novo | Acesso negado: "este eleitor já votou" | ![](docs/img/06-voto-duplo.png) |
-| 3 | ID que não consta na lista | Acesso negado: "não consta na lista de eleitores aptos" | ![](docs/img/07-eleitor-inexistente.png) |
-| 4 | Eleitor responde `n` na confirmação | Volta ao menu, nada é enviado | |
-| 5 | Comando `apuracao` no servidor | Totais por candidato | ![](docs/img/08-apuracao.png) |
-| 6 | Dois terminais votando ao mesmo tempo | Ambos atendidos, sem voto duplo | |
-| 7 | Reinício do servidor | Quem já votou continua bloqueado | |
+| 1 | Eleitor apto vota | Rodar o cliente com o ID `1001` e confirmar um candidato | Recibo exibido e voto contado |
+| 2 | Mesmo eleitor tenta votar de novo | Rodar o cliente de novo com o mesmo ID | Acesso negado: "este eleitor já votou" |
+| 3 | ID que não consta na lista | Rodar o cliente com o ID `9999` | Acesso negado: "não consta na lista de eleitores aptos" |
+| 4 | Eleitor não confirma o candidato | Escolher um candidato e responder `n` | Volta ao menu, nada é enviado |
+| 5 | Apuração | Digitar `apuracao` no prompt `admin>` | Totais por candidato |
+| 6 | Concorrência | Abrir dois clientes ao mesmo tempo, com IDs diferentes | Ambos atendidos, sem voto duplo |
+| 7 | Persistência | Digitar `sair` no servidor, iniciá-lo de novo (sem apagar `dados/estado`) e tentar votar com um ID que já votou | Continua bloqueado: "já votou" |
+
+Mensagens exibidas pelo cliente nos testes 2 e 3:
+
+```
+Acesso negado: este eleitor já votou.
+Acesso negado: este ID não consta na lista de eleitores aptos.
+```
 
 Exemplo de apuração:
 
@@ -278,9 +279,17 @@ sudo apt install -y tcpdump
 sudo tcpdump -A -l -i enp0s3 port 5000 | grep -a -E "LOGIN|LISTAR|VOTO|CANDIDATOS|ACK|ERRO"
 ```
 
-o voto aparece como `VOTO Mg==` em vez de `VOTO 2`. Se o servidor receber o voto em texto claro ou com Base64 inválido, responde `ERRO FORMATO_INVALIDO`.
+o voto aparece como `VOTO Mg==` em vez de `VOTO 2`:
 
-![Captura do tráfego com tcpdump](docs/img/09-tcpdump-base64.png)
+```
+LOGIN 1003
+LISTAR
+CANDIDATOS 1:Ana Souza;2:Bruno Lima;3:Carla Mendes;0:Voto em Branco
+VOTO Mg==
+ACK 81EA2C67-6E77-4935-8B97-D5DB461DBA4C
+```
+
+ Se o servidor receber o voto em texto claro ou com Base64 inválido, responde `ERRO FORMATO_INVALIDO`.
 
 > **Limitação:** Base64 é uma **codificação**, não uma criptografia. Qualquer pessoa decodifica o valor, por exemplo com `echo Mg== | base64 -d`. Ele evita a leitura direta do voto no tráfego, mas não oferece sigilo real. Em um sistema de verdade seria necessário **TLS**. Além disso, o `LOGIN` e a lista de candidatos continuam em texto claro.
 
@@ -302,8 +311,6 @@ cat logs/auditoria.log
 
 São registradas também as tentativas recusadas. O texto vindo do cliente é higienizado antes de ser gravado, para que ninguém consiga forjar linhas no log.
 
-![Log de auditoria](docs/img/10-auditoria-log.png)
-
 ---
 
 ## 6. Limitações e melhorias possíveis
@@ -316,6 +323,9 @@ São registradas também as tentativas recusadas. O texto vindo do cliente é hi
 
 ## 7. Histórico de desenvolvimento
 
-O histórico de commits está visível no próprio repositório (`git log --oneline`).
+O histórico de commits está visível no próprio repositório (aba **Commits** no GitHub) e pode ser listado com:
 
-![Histórico de commits](docs/img/11-git-log.png)
+```bash
+git log --oneline
+```
+
