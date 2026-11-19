@@ -27,6 +27,7 @@ public class ServidorUrna {
         Path eleitores = Paths.get(perguntar(teclado, "Arquivo de eleitores aptos", "dados/eleitores.txt"));
 
         UrnaService urna = new UrnaService(candidatos, eleitores, Paths.get("dados/estado"));
+        AuditoriaLog auditoria = new AuditoriaLog(Paths.get("logs/auditoria.log"));
         ServerSocket servidor = new ServerSocket(porta, 50, InetAddress.getByName(ip));
         System.out.println("Servidor ouvindo em " + ip + ":" + porta);
 
@@ -35,7 +36,7 @@ public class ServidorUrna {
             while (!servidor.isClosed()) {
                 try {
                     Socket cliente = servidor.accept();
-                    new Thread(new ClienteHandler(cliente, urna)).start();
+                    new Thread(new ClienteHandler(cliente, urna, auditoria)).start();
                 } catch (IOException e) {
                     if (!servidor.isClosed()) {
                         System.out.println("Erro ao aceitar conexão: " + e.getMessage());
