@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -64,7 +65,10 @@ public class ClienteUrna {
 
             // 4) Envio do voto e espera do recibo
             System.out.println("Enviando voto e aguardando o recibo do servidor...");
-            resposta = enviar(saida, entrada, "VOTO " + escolha);
+            // O número do candidato é enviado em Base64, não em texto claro.
+            String votoCodificado = Base64.getEncoder()
+                    .encodeToString(String.valueOf(escolha).getBytes(StandardCharsets.UTF_8));
+            resposta = enviar(saida, entrada, "VOTO " + votoCodificado);
             if (resposta.startsWith("ACK ")) {
                 System.out.println();
                 System.out.println("VOTO REGISTRADO COM SUCESSO!");
@@ -158,6 +162,7 @@ public class ClienteUrna {
             case "JA_VOTOU" -> "este eleitor já votou.";
             case "CANDIDATO_INVALIDO" -> "candidato inválido.";
             case "NAO_AUTENTICADO" -> "eleitor não identificado.";
+            case "FORMATO_INVALIDO" -> "mensagem de voto em formato inválido.";
             case "ERRO_INTERNO" -> "erro interno no servidor. Tente novamente.";
             default -> codigo;
         };
